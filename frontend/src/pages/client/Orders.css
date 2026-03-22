@@ -1,0 +1,165 @@
+.orders-page {
+  min-height: calc(100vh - 64px);
+  background: #f5f5f5;
+  padding: 40px 20px;
+}
+
+.orders-container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.orders-container h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 28px;
+}
+
+.orders-loading {
+  text-align: center;
+  padding: 60px;
+  color: #666;
+}
+
+.orders-empty {
+  background: white;
+  border-radius: 12px;
+  padding: 60px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+}
+
+.orders-empty p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.btn-primary-link {
+  display: inline-block;
+  padding: 10px 24px;
+  background: #2563eb;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-primary-link:hover {
+  background: #1d4ed8;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.order-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-card-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.order-date {
+  font-size: 13px;
+  color: #666;
+}
+
+.order-card-right {
+  text-align: right;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.status-orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.status-blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.status-purple {
+  background: #faf5ff;
+  color: #7c3aed;
+}
+
+.status-green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.status-red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.status-gray {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.order-total {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111;
+}
+
+.order-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: #fafafa;
+}
+
+.order-items-count {
+  font-size: 13px;
+  color: #666;
+}
+
+.order-detail-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.order-detail-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
