@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
+
 export default function Home() {
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
@@ -123,7 +124,6 @@ export default function Home() {
                       </div>
                       <p className="store-name">{store.name}</p>
                       <p className="store-category">{store.category_name}</p>
-                      <p className="store-count">{store.product_count} produit(s)</p>
                     </div>
                   ))}
                 </div>
@@ -164,14 +164,22 @@ export default function Home() {
 }
 
 function ProductCard({ product, user, adding, success, onAdd }) {
+  const [activeImage, setActiveImage] = useState(product.image);
+  const [activeVariant, setActiveVariant] = useState(null);
+
+  function selectVariant(variant) {
+    setActiveVariant(variant.id);
+    if (variant.image) setActiveImage(variant.image);
+  }
+
   return (
-    <div className={`product-card ${product.stock === 0 ? 'out-of-stock' : ''}`}>
+    <div className={`product-card ${product.stock === 0 && !product.variants?.length ? 'out-of-stock' : ''}`}>
       <div className="product-image">
-        {product.image
-          ? <img src={product.image} alt={product.name} />
-          : <span></span>
+        {activeImage
+          ? <img src={activeImage} alt={product.name} />
+          : <span>🛍️</span>
         }
-        {product.stock === 0 && (
+        {product.stock === 0 && !product.variants?.length && (
           <div className="out-of-stock-overlay">Rupture de stock</div>
         )}
       </div>
@@ -179,6 +187,25 @@ function ProductCard({ product, user, adding, success, onAdd }) {
         <p className="product-enterprise">{product.enterprise_name}</p>
         <h3 className="product-name">{product.name}</h3>
         <p className="product-description">{product.description}</p>
+
+        {/* Color variants */}
+        {product.variants?.length > 0 && (
+          <div className="product-colors">
+            {product.variants.map(variant => (
+              <button
+                key={variant.id}
+                className={`color-btn ${activeVariant === variant.id ? 'active' : ''}`}
+                style={{
+                  background: variant.color_hex,
+                  border: variant.color_hex === '#FFFFFF' ? '2px solid #e0e0e0' : '2px solid transparent'
+                }}
+                onClick={() => selectVariant(variant)}
+                title={variant.color_name}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="product-footer">
           <span className="product-price">
             {Number(product.price).toFixed(2)} TND

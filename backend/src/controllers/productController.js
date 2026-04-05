@@ -15,14 +15,14 @@ function deleteImage(filename) {
 
 async function getAll(req, res) {
   try {
-    console.log('BODY:', req.body);
-console.log('FILE:', req.file);
     const { search } = req.query;
     let sql = `
-      SELECT p.*, e.name AS enterprise_name, c.name AS category_name
+      SELECT p.*, e.name AS enterprise_name, 
+             COALESCE(c2.name, c.name) AS category_name
       FROM products p
       JOIN enterprises e ON e.id = p.enterprise_id
-      JOIN categories c  ON c.id = e.category_id
+      LEFT JOIN categories c ON c.id = e.category_id
+      LEFT JOIN categories c2 ON c2.id = p.category_id
     `;
     const params = [];
     if (search) {
@@ -31,7 +31,20 @@ console.log('FILE:', req.file);
     }
     sql += ' ORDER BY p.created_at DESC';
     const [rows] = await pool.query(sql, params);
-    const data = rows.map(p => ({ ...p, image: getImageUrl(p.image) }));
+
+    // Fetch variants for each product
+    const data = await Promise.all(rows.map(async p => {
+      const [variants] = await pool.query(
+        'SELECT * FROM product_variants WHERE product_id = ? ORDER BY id ASC',
+        [p.id]
+      );
+      return {
+        ...p,
+        image: getImageUrl(p.image),
+        variants: variants.map(v => ({ ...v, image: getImageUrl(v.image) }))
+      };
+    }));
+
     return res.json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Erreur serveur.' });
@@ -41,10 +54,12 @@ console.log('FILE:', req.file);
 async function getOne(req, res) {
   try {
     const [rows] = await pool.query(
-      `SELECT p.*, e.name AS enterprise_name, c.name AS category_name
+      `SELECT p.*, e.name AS enterprise_name, 
+              COALESCE(c2.name, c.name) AS category_name
        FROM products p
        JOIN enterprises e ON e.id = p.enterprise_id
-       JOIN categories c  ON c.id = e.category_id
+       LEFT JOIN categories c ON c.id = e.category_id
+       LEFT JOIN categories c2 ON c2.id = p.category_id
        WHERE p.id = ?`,
       [req.params.id]
     );
@@ -76,7 +91,7 @@ async function getMyProducts(req, res) {
 
 async function create(req, res) {
   try {
-    const { name, description, price, stock } = req.body;
+    const { name, description, price, stock, category_id } = req.body;
     if (!name || price === undefined || stock === undefined) {
       if (req.file) deleteImage(req.file.filename);
       return res.status(400).json({ success: false, message: 'Nom, prix et stock requis.' });
@@ -89,8 +104,8 @@ async function create(req, res) {
     }
     const image = req.file ? req.file.filename : null;
     const [result] = await pool.query(
-      'INSERT INTO products (enterprise_id, name, description, price, stock, image) VALUES (?, ?, ?, ?, ?, ?)',
-      [enterprise[0].id, name, description || null, parseFloat(price), parseInt(stock), image]
+      'INSERT INTO products (enterprise_id, category_id, name, description, price, stock, image) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [enterprise[0].id, category_id || null, name, description || null, parseFloat(price), parseInt(stock), image]
     );
     const [product] = await pool.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
     return res.status(201).json({
@@ -100,13 +115,14 @@ async function create(req, res) {
     });
   } catch (err) {
     if (req.file) deleteImage(req.file.filename);
+    console.error('Create error:', err);
     return res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
 }
 
 async function update(req, res) {
   try {
-    const { name, description, price, stock } = req.body;
+    const { name, description, price, stock, category_id } = req.body;
     const [enterprise] = await pool.query(
       'SELECT id FROM enterprises WHERE user_id = ?', [req.user.id]);
     if (!enterprise.length) {
@@ -121,17 +137,14 @@ async function update(req, res) {
       if (req.file) deleteImage(req.file.filename);
       return res.status(404).json({ success: false, message: 'Produit introuvable.' });
     }
-
-    // Si nouvelle image → supprimer l'ancienne
     let image = product[0].image;
     if (req.file) {
       deleteImage(image);
       image = req.file.filename;
     }
-
     await pool.query(
-      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ? WHERE id = ?',
-      [name, description || null, parseFloat(price), parseInt(stock), image, req.params.id]
+      'UPDATE products SET name = ?, description = ?, category_id = ?, price = ?, stock = ?, image = ? WHERE id = ?',
+      [name, description || null, category_id || null, parseFloat(price), parseInt(stock), image, req.params.id]
     );
     const [updated] = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
     return res.json({
@@ -164,5 +177,81 @@ async function destroy(req, res) {
     return res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
 }
+async function getVariants(req, res) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM product_variants WHERE product_id = ? ORDER BY id ASC',
+      [req.params.id]
+    );
+    const data = rows.map(v => ({ ...v, image: getImageUrl(v.image) }));
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+}
 
-module.exports = { getAll, getOne, getMyProducts, create, update, destroy };
+async function saveVariants(req, res) {
+  try {
+    const { variants } = req.body;
+    const productId = req.params.id;
+
+    // Vérifier que le produit appartient au seller
+    const [enterprise] = await pool.query(
+      'SELECT id FROM enterprises WHERE user_id = ?', [req.user.id]);
+    if (!enterprise.length)
+      return res.status(400).json({ success: false, message: 'Entreprise introuvable.' });
+
+    const [product] = await pool.query(
+      'SELECT * FROM products WHERE id = ? AND enterprise_id = ?',
+      [productId, enterprise[0].id]
+    );
+    if (!product.length)
+      return res.status(404).json({ success: false, message: 'Produit introuvable.' });
+
+    // Supprimer les anciennes variantes
+    const [oldVariants] = await pool.query(
+      'SELECT image FROM product_variants WHERE product_id = ?', [productId]);
+    for (const v of oldVariants) {
+      if (v.image) deleteImage(v.image);
+    }
+    await pool.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
+
+    // Insérer les nouvelles variantes
+    if (variants && variants.length > 0) {
+      for (const variant of variants) {
+        await pool.query(
+          'INSERT INTO product_variants (product_id, color_name, color_hex, stock) VALUES (?, ?, ?, ?)',
+          [productId, variant.color_name, variant.color_hex || '#000000', variant.stock || 0]
+        );
+      }
+    }
+
+    const [rows] = await pool.query(
+      'SELECT * FROM product_variants WHERE product_id = ? ORDER BY id ASC', [productId]);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+}
+
+async function uploadVariantImage(req, res) {
+  try {
+    const { variantId } = req.params;
+    if (!req.file)
+      return res.status(400).json({ success: false, message: 'Image requise.' });
+
+    const [old] = await pool.query('SELECT image FROM product_variants WHERE id = ?', [variantId]);
+    if (old.length && old[0].image) deleteImage(old[0].image);
+
+    await pool.query('UPDATE product_variants SET image = ? WHERE id = ?',
+      [req.file.filename, variantId]);
+
+    return res.json({ success: true, image: getImageUrl(req.file.filename) });
+  } catch (err) {
+    if (req.file) deleteImage(req.file.filename);
+    return res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+}
+
+module.exports = { getAll, getOne, getMyProducts, create, update, destroy, getVariants, saveVariants, uploadVariantImage };

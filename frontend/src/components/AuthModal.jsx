@@ -24,7 +24,7 @@ export default function AuthModal({ onClose }) {
       onClose();
       if (user.role === 'seller') navigate('/seller');
       else if (user.role === 'admin') navigate('/admin');
-      else navigate('/products');
+      else navigate('/');
     } catch (err) {
       setLoginError(err.response?.data?.message || 'Erreur de connexion.');
     } finally {

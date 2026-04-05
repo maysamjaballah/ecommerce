@@ -82,9 +82,9 @@ export default function Products() {
                     <span className="product-price">
                       {Number(product.price).toFixed(2)} TND
                     </span>
-                    <span className={`product-stock ${product.stock === 0 ? 'out' : ''}`}>
-                      {product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'}
-                    </span>
+                    {product.stock === 0 && (
+  <span className="product-stock out">Rupture</span>
+)}
                   </div>
                   {user?.role === 'client' && product.stock > 0 && (
                     <button

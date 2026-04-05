@@ -29,9 +29,12 @@ router.get('/stores', async (req, res) => {
   try {
     const { pool } = require('../config/db');
     const [rows] = await pool.query(
-      `SELECT e.*, c.name AS category_name, COUNT(p.id) AS product_count
+      `SELECT e.*, 
+              GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS category_name,
+              COUNT(DISTINCT p.id) AS product_count
        FROM enterprises e
-       JOIN categories c ON c.id = e.category_id
+       LEFT JOIN enterprise_categories ec ON ec.enterprise_id = e.id
+       LEFT JOIN categories c ON c.id = ec.category_id
        LEFT JOIN products p ON p.enterprise_id = e.id
        GROUP BY e.id
        ORDER BY e.created_at DESC`
@@ -53,16 +56,16 @@ router.get('/products/:id', productCtrl.getOne);
 // ─── ENTERPRISE (seller) ─────────────────────────────────────────────────────
 router.get ('/enterprise', authenticate, requireVerified, authorize('seller'), enterpriseCtrl.getMyEnterprise);
 router.post('/enterprise', authenticate, requireVerified, authorize('seller'), upload.single('image'), enterpriseCtrl.createEnterprise);
-
+router.put('/enterprise', authenticate, requireVerified, authorize('seller'), upload.single('image'), enterpriseCtrl.updateEnterprise);
 // ─── SELLER PRODUCTS ─────────────────────────────────────────────────────────
 router.get   ('/seller/products',     authenticate, requireVerified, authorize('seller'), productCtrl.getMyProducts);
-router.post('/seller/products', authenticate, requireVerified, authorize('seller'), (req, res, next) => {
-  console.log('Route atteinte, user:', req.user);
-  next();
-}, upload.single('image'), productCtrl.create);
+router.post('/seller/products', authenticate, requireVerified, authorize('seller'), upload.single('image'), productCtrl.create);
 router.put   ('/seller/products/:id', authenticate, requireVerified, authorize('seller'), productCtrl.update);
 router.delete('/seller/products/:id', authenticate, requireVerified, authorize('seller'), productCtrl.destroy);
-
+router.get   ('/seller/products/:id/variants',              authenticate, requireVerified, authorize('seller'), productCtrl.getVariants);
+router.post  ('/seller/products/:id/variants',              authenticate, requireVerified, authorize('seller'), productCtrl.saveVariants);
+router.post  ('/seller/products/:id/variants/:variantId/image', authenticate, requireVerified, authorize('seller'), upload.single('image'), productCtrl.uploadVariantImage);
+router.get   ('/products/:id/variants',                     productCtrl.getVariants);
 // ─── CART (client) ───────────────────────────────────────────────────────────
 router.get   ('/cart',                    authenticate, requireVerified, authorize('client'), cartCtrl.getCart);
 router.post  ('/cart/add',                authenticate, requireVerified, authorize('client'), cartCtrl.addItem);
