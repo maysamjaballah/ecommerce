@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import api from '../../api';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +9,8 @@ import './Products.css';
 export default function Products() {
   const [products, setProducts]   = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [fakeLoading, setFakeLoading] = useState(false);
+  const [fakeError, setFakeError]     = useState('');
   const [searchParams]            = useSearchParams();
   const search                    = searchParams.get('search') || '';
   const { addItem }               = useCart();
@@ -45,6 +48,35 @@ export default function Products() {
     }
   }
 
+  function mapFakeProduct(item) {
+    return {
+      id: `fake-${item.id}-${Date.now()}`,
+      name: item.title,
+      description: item.description,
+      price: item.price || 0,
+      stock: 99,
+      category_name: item.category || 'Fake',
+      enterprise_name: 'Fake API',
+      image: item.image,
+    };
+  }
+
+  async function addFakeProducts() {
+    setFakeError('');
+    setFakeLoading(true);
+
+    try {
+      const response = await axios.get('https://fakestoreapi.com/products?limit=5');
+      const fakeProducts = response.data.map(mapFakeProduct);
+      setProducts((prev) => [...fakeProducts, ...prev]);
+    } catch (err) {
+      console.error(err);
+      setFakeError('Impossible de charger les produits fake.');
+    } finally {
+      setFakeLoading(false);
+    }
+  }
+
   return (
     <div className="products-page">
       <div className="products-container">
@@ -53,6 +85,16 @@ export default function Products() {
             {search ? `Résultats pour "${search}"` : 'Tous les produits'}
           </h1>
           <p>{products.length} produit(s)</p>
+          <div className="products-actions">
+            <button
+              className="fake-products-btn"
+              onClick={addFakeProducts}
+              disabled={fakeLoading}
+            >
+              {fakeLoading ? 'Chargement...' : 'Ajouter 5 produits fake'}
+            </button>
+          </div>
+          {fakeError && <p className="fake-error">{fakeError}</p>}
         </div>
 
         {loading ? (

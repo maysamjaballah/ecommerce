@@ -20,6 +20,37 @@
   margin-bottom: 4px;
 }
 
+.products-actions {
+  margin-top: 16px;
+}
+
+.fake-products-btn {
+  padding: 10px 16px;
+  border: none;
+  background: #111827;
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.fake-products-btn:hover:not(:disabled) {
+  background: #374151;
+}
+
+.fake-products-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fake-error {
+  color: #b91c1c;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
 .products-header p {
   font-size: 14px;
   color: #666;
