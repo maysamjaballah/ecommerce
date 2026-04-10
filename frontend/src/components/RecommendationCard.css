@@ -19,7 +19,7 @@
   position: absolute;
   top: 10px;
   left: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #2d3748;
   color: white;
   padding: 4px 8px;
   border-radius: 6px;
@@ -150,7 +150,7 @@
 .recommendation-add-btn {
   width: 100%;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #2d3748;
   color: white;
   border: none;
   border-radius: 8px;
@@ -165,7 +165,7 @@
 }
 
 .recommendation-add-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  background: #4a5568;
   transform: translateY(-1px);
 }
 
@@ -175,7 +175,7 @@
 }
 
 .recommendation-add-btn.success {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  background: #38a169;
 }
 
 /* Responsive */
